@@ -1,120 +1,137 @@
-# Blog API with Django REST Framework
+# DRF Blog API
 
-This project is a full-featured Blog API built with Python, Django, and Django REST Framework. It provides a complete set of CRUD (Create, Read, Update, Delete) endpoints for managing blog posts, complete with user authentication and permissions.
-
-This API serves as a robust backend, ready to be consumed by any front-end client (like React, Vue, or a mobile application).
+A simple but robust RESTful API for a blog platform, built with Django and Django REST Framework. This project demonstrates core API principles including token-based authentication (JWT), custom permissions, and full CRUD (Create, Read, Update, Delete) functionality for blog posts.
 
 ## Features
 
--   **Full CRUD Functionality:** Create, retrieve, update, and delete blog posts via the API.
--   **Authentication & Permissions:** Utilizes Django REST Framework's `IsAuthenticatedOrReadOnly` permission class.
-    -   `GET` requests (reading posts) are open to the public.
-    -   `POST`, `PUT`, `PATCH`, and `DELETE` requests require user authentication.
--   **User-Post Relationship:** Each post is directly associated with an author (a Django `User` model), ensuring clear ownership of content.
--   **Browsable API:** Includes the user-friendly browsable API provided by DRF for easy interaction and testing directly in your browser.
--   **Admin Integration:** The `Post` model is fully integrated with the Django admin panel for easy content management.
--   **Unit Tests:** Comes with a basic test suite to ensure the reliability of the `Post` model.
+*   **Full CRUD Operations:** Create, retrieve, update, and delete blog posts.
+*   **Token-Based Authentication:** Secured endpoints using JSON Web Tokens (JWT) for stateless authentication.
+*   **Custom Permissions:** Object-level permissions ensure that only the author of a post can edit or delete it.
+*   **User Ownership:** Posts are automatically associated with the authenticated user who creates them.
+*   **Clean and Organized Codebase:** Follows Django best practices for a scalable and maintainable project structure.
 
 ## Technologies Used
 
--   **Backend:** Python, Django
--   **API Framework:** Django REST Framework
--   **Database:** SQLite (default)
+*   **Backend:** Python
+*   **Framework:** Django
+*   **API Toolkit:** Django REST Framework
+*   **Authentication:** DRF Simple JWT
 
-## API Endpoints
+## Prerequisites
 
-The API is versioned and available under the base URL: `/api/v1/`.
+Before you begin, ensure you have the following installed on your local machine:
 
-| Endpoint             | HTTP Method | Description                                  | Authentication Required |
-| -------------------- | ----------- | -------------------------------------------- | ----------------------- |
-| `/api/v1/`           | `GET`       | Retrieves a list of all blog posts.          | No                      |
-| `/api/v1/`           | `POST`      | Creates a new blog post.                     | Yes                     |
-| `/api/v1/<int:pk>/`  | `GET`       | Retrieves a single blog post by its ID.      | No                      |
-| `/api/v1/<int:pk>/`  | `PUT`       | Updates a blog post.                         | Yes                     |
-| `/api/v1/<int:pk>/`  | `PATCH`     | Partially updates a blog post.               | Yes                     |
-| `/api/v1/<int:pk>/`  | `DELETE`    | Deletes a blog post.                         | Yes                     |
+*   Python 3.8+
+*   Pip (Python package installer)
+*   Git
 
 ## Setup and Installation
 
-Follow these instructions to get the backend server running on your local machine.
+Follow these steps to get a local copy of the project up and running.
 
-### Prerequisites
+1.  **Clone the Repository:**
+    ```sh
+    git clone https://github.com/your-username/drf-blog-api.git
+    cd drf-blog-api
+    ```
 
--   Python 3.8 or higher
--   pip (Python package installer)
--   Git
+2.  **Create and Activate a Virtual Environment:**
+    It's highly recommended to use a virtual environment to manage project dependencies.
+    ```sh
+    # For macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
 
-### 1. Clone the Repository
+    # For Windows
+    python -m venv venv
+    .\venv\Scripts\activate
+    ```
 
+3.  **Install Dependencies:**
+    All required packages are listed in the `requirements.txt` file.
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+4.  **Apply Database Migrations:**
+    This will create the necessary database tables.
+    ```sh
+    python manage.py migrate
+    ```
+
+5.  **Create a Superuser:**
+    This will allow you to access the Django admin panel.
+    ```sh
+    python manage.py createsuperuser
+    ```
+    You will be prompted to enter a username, email, and password.
+
+6.  **Run the Development Server:**
+    ```sh
+    python manage.py runserver
+    ```
+    The API will be available at `http://127.0.0.1:8000/`.
+
+## API Endpoints
+
+The following are the main endpoints available in the API.
+
+| Method | Endpoint | Description | Authentication Required |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/token/` | Obtain a new JWT access and refresh token. | No |
+| `POST` | `/api/token/refresh/` | Obtain a new access token using a refresh token. | No |
+| `GET` | `/api/v1/` | Retrieve a list of all blog posts. | No |
+| `POST` | `/api/v1/` | Create a new blog post. | Yes (Bearer Token) |
+| `GET` | `/api/v1/<id>/` | Retrieve a single blog post by its ID. | No |
+| `PUT` | `/api/v1/<id>/` | Update a blog post. | Yes (Author only) |
+| `DELETE` | `/api/v1/<id>/` | Delete a blog post. | Yes (Author only) |
+
+## Usage Guide
+
+To interact with the protected endpoints, you must first obtain an access token and then include it in the `Authorization` header for subsequent requests.
+
+#### Step 1: Obtain an Access Token
+
+Send a `POST` request to the `/api/token/` endpoint with your username and password in the request body.
+
+**Request:**
 ```bash
-git clone https://github.com/<your-username>/drf-blog-api.git
-cd drf-blog-api
+curl -X POST -H "Content-Type: application/json" \
+-d '{"username": "yourusername", "password": "yourpassword"}' \
+http://127.0.0.1:8000/api/token/```
+
+**Response:**
+```json
+{
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl..."
+}
 ```
 
-### 2. Set Up the Environment
+#### Step 2: Make Authenticated Requests
 
-Navigate into the directory where the project code is located (in this case, it seems to be a `backend` folder, but adjust if needed).
+Copy the `access` token from the response and use it as a Bearer token in the `Authorization` header for all requests to protected endpoints.
 
+**Example: Create a New Post**
+
+**Request:**
 ```bash
-# If your project is inside a 'backend' folder
-cd backend
+curl -X POST \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <PASTE_YOUR_ACCESS_TOKEN_HERE>" \
+-d '{"title": "My First API Post", "body": "This is awesome!"}' \
+http://127.0.0.1:8000/api/v1/
 ```
 
-Create and activate a Python virtual environment:
-
-```bash
-# For macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-
-# For Windows
-python -m venv venv
-.\venv\Scripts\activate
+**Successful Response (201 Created):**
+```json
+{
+    "id": 1,
+    "author": "yourusername",
+    "title": "My First API Post",
+    "body": "This is awesome!",
+    "created_at": "2025-11-12T10:30:00.123456Z"
+}
 ```
 
-### 3. Install Dependencies
-
-Install all the required Python packages.
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Apply Database Migrations
-
-Create the database schema based on the models.
-
-```bash
-python manage.py migrate
-```
-
-### 5. Create a Superuser
-
-This is required to access the Django admin panel and to create posts via the API.
-
-```bash
-python manage.py createsuperuser
-```
-Follow the prompts to create a username and password.
-
-## Running the Application
-
-Start the Django development server:
-
-```bash
-python manage.py runserver
-```
-
-The API server will now be running at `http://127.0.0.1:8000/`.
-
-## How to Use the API
-
-1.  **Read Posts (No Auth Needed):**
-    -   Navigate to `http://127.0.0.1:8000/api/v1/` in your browser to see the list of all posts.
-    -   Navigate to `http://127.0.0.1:8000/api/v1/1/` to see the detail view for the post with ID 1.
-
-2.  **Create/Update/Delete Posts (Auth Required):**
-    -   Go to `http://127.0.0.1:8000/api/v1/` and log in to the browsable API using the superuser credentials you created.
-    -   Once logged in, you will see a form at the bottom of the page that allows you to `POST` (create) a new blog post.
-    -   In the detail view (e.g., `/api/v1/1/`), you will see options to `PUT`, `PATCH`, and `DELETE` the post.
-```
+---
